@@ -7,8 +7,6 @@ using namespace std;
 #define INF 100
 #define a -3.0
 
-
-
 // ----------------------------------------------------
 // ----------------------------------------------------
 // ----------------------------------------------------
@@ -89,6 +87,7 @@ float eS(char x, char y)
 	else
 		return INF;
 }
+
 float eM();
 float eDA();
 
@@ -99,21 +98,21 @@ float eDA();
 // DP tables to be computed. 
 vector<float> ED;
 vector<float> E;
-vector<vector<int> > EDs;
-vector<vector<int> > Es;
-vector<vector<int> > EDbi;
-vector<vector<int> > Ebi;
-vector<vector<int> > EDm;
-vector<vector<int> > Em;
+vector<vector<float> > EDs;
+vector<vector<float> > Es;
+vector<vector<float> > EDbi;
+vector<vector<float> > Ebi;
+vector<vector<float> > EDm;
+vector<vector<float> > Em;
 
 vector<float> tracebackED;
 vector<float> tracebackE;
-vector<vector<int> > tracebackEDs;
-vector<vector<int> > tracebackEs;
-vector<vector<int> > tracebackEDbi;
-vector<vector<int> > tracebackEbi; // no need, only one option for traceback
-vector<vector<int> > tracebackEDm;
-vector<vector<int> > tracebackEm;
+vector<vector<float> > tracebackEDs;
+vector<vector<float> > tracebackEs;
+vector<vector<float> > tracebackEDbi;
+vector<vector<float> > tracebackEbi; // no need, only one option for traceback
+vector<vector<float> > tracebackEDm;
+vector<vector<float> > tracebackEm;
 
 // Variables
 std::vector<std::pair<int, int> > result;
@@ -123,8 +122,15 @@ string str = "GCACGACG"; // "GGGAAAUCC";
 void findSecondaryStructure(string s);
 void initializeTables(int n);
 void computeED_j(int n);
-
-/* 	Implementation of density fold 
+float computeEbi(int i, int j);
+float computeEm(int i, int j);
+float computeEDs(int i, int j);
+float computeEs(int i, int j);
+float computeEDbi(int i, int j);
+float computeEDm(int i, int j);
+void print_matrix(const vector<vector<float> > &A);
+void printStructure(const std::vector<std::pair<int, int> >& result, int L);
+/* 	Initial implementation of density fold 
 *	algorithm for RNA structure prediction. 
 */
 int main(int argc, char **argv){
@@ -134,12 +140,16 @@ int main(int argc, char **argv){
 
 void findSecondaryStructure(string str){
 	int n = str.length();
-	initializeTables(n);
+	std::vector<std::pair<int, int> > result;
 
-	void computeED_j(n);
+	initializeTables(n);
+ 	computeED_j(n);
+ 	print_matrix(EDs);
+ 	printStructure(result, n);
 }
+
 void computeED_j(int n){
-	int min;
+	float min;
 	for( int j = 0; j < n; j++){
 		min = 0;
 		// case 1
@@ -147,21 +157,20 @@ void computeED_j(int n){
 			min = ED[j-1];
 			tracebackED[j] = -1; 
 		} 
-		// case 2
-		else if(){
-			for( int i = 1; i <= j-1; i++){
-				int EDs_i_j = computeEDs(i, j);
-				if( (ED[i-1] + EDs_i_j) < min){
-					case2_min = EDs_i_j + ED[i-1];
-					tracebackED[j] = i; 
-				}
+		// case 2	
+		for( int i = 1; i <= j-1; i++){
+			float EDs_i_j = computeEDs(i, j);
+			if( (ED[i-1] + EDs_i_j) < min){
+				float case2_min = EDs_i_j + ED[i-1];
+				tracebackED[j] = i; 
 			}
 		}
+	
 	}
 }
 
-int computeEDs(int i, int j){
-	int min;
+float computeEDs(int i, int j){
+	float min;
 	// case 1
 	min = infinity;
 	// case 2
@@ -170,7 +179,7 @@ int computeEDs(int i, int j){
 		tracebackEDs[i][j] = -2;
 	}
 	// case 3
-	float from_Es = computEs(i+1, j-1);
+	float from_Es = computeEs(i+1, j-1);
 	float density = (2*((eS(str[i], str[j]) + from_Es)/(j-i+1)) ) + EDs[i+1][j-1];
 	if( density < min){
 		min = density;
@@ -196,10 +205,10 @@ float computeEDbi(int i, int j){
 	for( int i_prime = i+1; i_prime <= j-2; i_prime++){
 		for( int j_prime = i_prime +1; j_prime <= j-1; j_prime++){
 			if(i_prime - i + j - j_prime < 2){
-				int temp = ebi(str[i], str[j], str[i_prime], str[j_prime]) + V[i_prime][j_prime];
+				int temp = eBI(str[i], str[j], str[i_prime], str[j_prime]) + EDs[i_prime][j_prime];
 				if( temp < min){
 					min = temp;
-					tb_V[i][j] = -3; // case 4
+					tracebackEDs[i][j] = -3; // case 4
 				}
 			}
 		}
@@ -214,7 +223,7 @@ float computeEDm(int i, int j){
 }
 
 float computeEs(int i, int j){
-	int min;
+	float min;
 	// case 1
 	min = infinity;
 	// case 2
@@ -223,6 +232,7 @@ float computeEs(int i, int j){
 		tracebackEs[i][j] = -2;
 	}
 	// case 3
+	if (i < j)
 	if( (Es[i+1][j-1] + eS(str[i], str[j])) < min){
 		min = Es[i+1][j-1] + eS(str[i], str[j]);
 		tracebackEs[i][j] = -3;
@@ -259,7 +269,10 @@ float computeEbi(int i, int j){
 float computeEm(int i, int j){
 	return -3.0;
 }
+
+
 void initializeTables(int n){
+	
 	ED.resize(n);
 	E.resize(n);
 	EDs.resize(n);
@@ -278,7 +291,7 @@ void initializeTables(int n){
 	tracebackEDm.resize(n);
 	tracebackEm.resize(n);
 	
-	for (size_t i = 0; i < n; ++i)
+	for (int i = 0; i < n; ++i)
 	{
 		EDs[i].resize(n);
 		Es[i].resize(n);
@@ -294,6 +307,40 @@ void initializeTables(int n){
 		tracebackEDm[i].resize(n);
 		tracebackEm[i].resize(n);
 	}
+}
 
-	// maybe need to initialize with infinity?? 
+void printStructure(const std::vector<std::pair<int, int> >& result, int L)
+{	
+	for (size_t i = 0; i < result.size(); i++){
+		// we actually keep the index values in result. 
+		cout << "("<< result[i].first + 1 << ", " << result[i].second + 1 << ") ";
+	}
+	cout << endl;
+	
+	char res[L];
+	for( int index = 0; index < L; index++){
+		res[index] = '.';
+	}
+	for(size_t in = 0; in < result.size(); in++){
+		int b = result[in].first;
+		int s = result[in].second;
+		res[b] = '(';
+		res[s] = ')';
+	}
+	string r = res;
+	cout << r.substr(0, L) << endl;
+}
+
+void print_matrix(const vector<vector<float> > &A){
+	for (int i = 0; i < A.size(); i++){
+		for (int j = 0; j < A[i].size()-1; j++){
+			if (i <= j){
+				cout << A[i][j] << "\t";    
+			}else{
+				cout << '-' << "\t";
+			}
+			
+		}
+		cout << endl;
+	}
 }
