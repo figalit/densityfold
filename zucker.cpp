@@ -95,14 +95,11 @@ float es(char x, char y)
 
 /* Declaration of helper functions. */
 int find_possible_secondary_structures(string str);
-
-// additional helper functions
 void print_matrix(const vector<vector<float> > &A);
 float computeV(int i, int j, string str, vector<vector<float> > &V, 
 	vector<vector<float> > &W, vector<vector<float> > &tb_W, vector<vector<float> > &tb_V);
 void computeW(vector<vector<float> > &W, int L, string str, vector<vector<float> > &V, 
 	vector<vector<float> > &tb_W, vector<vector<float> > &tb_V);
-// string get_format(vector<Point> v, int L);
 void print_matrix(const vector<vector<float> > &A);
 void tracebackV(int i, int j, vector<vector<float> > &tb_W, vector<vector<float> > &tb_V, std::vector<std::pair<int, int> >* result);
 void tracebackW(int i, int j, vector<vector<float> > &tb_W, vector<vector<float> > &tb_V, std::vector<std::pair<int, int> >* result);
@@ -118,7 +115,6 @@ int main(int argc, char **argv){
 
 
 int find_possible_secondary_structures(string str){
-
 	std::vector<std::pair<int, int> > result;
 	size_t n = str.size();
 	// str = "-" + str;  
@@ -136,7 +132,7 @@ int find_possible_secondary_structures(string str){
 		W[i].resize(str.length());
 	}
 
-	int m = 3; //4; // enforcing at least how many positions two pase pairs will be far from each other.
+	int m = 3; // enforcing at least how many positions two pase pairs will be far from each other.
 
 	for( int i = 0; i < n; i++){
 		for( int j = i+1; j < n ; j++){
@@ -176,7 +172,6 @@ int find_possible_secondary_structures(string str){
 	cout << "done" << endl;
 }
 
-// also add values in traceback 
 void computeW(vector<vector<float> > &W, int L, string str, 
 	vector<vector<float> > &V, vector<vector<float> > &tb_W, vector<vector<float> > &tb_V){
 	float i, j, min;
@@ -244,6 +239,7 @@ float computeV(int i, int j, string str, vector<vector<float> > &V,  vector<vect
 	V[i][j] = min;
 	return V[i][j];
 }
+
 void tracebackW(int i, int j, vector<vector<float> > &tb_W, vector<vector<float> > &tb_V, std::vector<std::pair<int, int> >* result){
 	cout << "tracebackW" << endl;
 	if(tb_W[i][j] == 0){
@@ -292,8 +288,7 @@ void tracebackV(int i, int j, vector<vector<float> > &tb_W, vector<vector<float>
 	}
 }
 
-void printStructure(const std::vector<std::pair<int, int> >& result, int L)
-{	
+void printStructure(const std::vector<std::pair<int, int> >& result, int L){	
 	for (size_t i = 0; i < result.size(); i++){
 		// we actually keep the index values in result. 
 		cout << "("<< result[i].first + 1 << ", " << result[i].second + 1 << ") ";

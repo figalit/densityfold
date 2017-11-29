@@ -199,7 +199,6 @@ float computeEDs(int i, int j){
 	return min;
 }
 
-// TODO
 float computeEDbi(int i, int j){
 	float min = 0;
 	for( int i_prime = i+1; i_prime <= j-2; i_prime++){
@@ -309,8 +308,7 @@ void initializeTables(int n){
 	}
 }
 
-void printStructure(const std::vector<std::pair<int, int> >& result, int L)
-{	
+void printStructure(const std::vector<std::pair<int, int> >& result, int L){	
 	for (size_t i = 0; i < result.size(); i++){
 		// we actually keep the index values in result. 
 		cout << "("<< result[i].first + 1 << ", " << result[i].second + 1 << ") ";
