@@ -13,18 +13,18 @@ using namespace std;
 ////////////////
 // GLOBALS
 ///////////////
-string str = "-AGACGACAAGGUUGAAUCGCACCCACAGUCUAUGAGUCGGUGACAACAUUACGAAAGGCUGUAAAAUCAAUUAUUCACCACAGGGGGCCCCCGUGUCUAG"; 
+string str = "-GCCGCGACAAGCGGUCCGGGCGCCCUAGGGGCCCGGCGGAGACGGGCGCCGGAGGUGUCCGACGCCUGCUCGUACCCAUCUUGCUCCUUGGAGGAUUUGGCUAUGAGGA"; 
 int n = str.length();
-std::vector<std::pair<int, int> > result;
+vector<std::pair<int, int> > result;
 // DP tables to be computed. 
-vector<float> ED;
+vector<float> ED (n, 0);
 vector<vector<float> > EDs ( n, std::vector<float> ( n, 0 ) );
 vector<vector<float> > Es ( n, std::vector<float> ( n, 0 ) );
 vector<vector<float> > EDm ( n, std::vector<float> ( n, 0 ) );
 vector<vector<float> > Em ( n, std::vector<float> ( n, 0 ) );
 // std::vector< std::vector< float > > item ( 2, std::vector<float> ( 2, 0 ) );
 
-vector<float> tracebackED;
+vector<float> tracebackED (n, 0);
 vector<vector<float> > tracebackEDs ( n, std::vector<float> ( n, 0 ) );
 vector<vector<float> > tracebackEs ( n, std::vector<float> ( n, 0 ) );
 vector<vector<float> > tracebackEDm ( n, std::vector<float> ( n, 0 ) );
@@ -38,7 +38,6 @@ float eH(char x, char y);
 float eDA(char x, char y);
 
 void findSecondaryStructure();
-void initializeTables();
 void computeED();
 float computeEDs();
 float computeEs();
@@ -47,11 +46,11 @@ float computeEDm(); // ------- This is actually ECM on the paper.
 void print_matrix(const vector<vector<float> > &A);
 void printStructure(const std::vector<std::pair<int, int> >& result);
 
-void tbEs(int i, int j);
-void tbEDs(int i, int j);
-void tbED(int j);
-void tbEm(int i, int j);
-void tbEDm(int i, int j);
+void tbEs(int i, int j, std::vector<std::pair<int, int> >* result);
+void tbEDs(int i, int j, std::vector<std::pair<int, int> >* result);
+void tbED(int j, std::vector<std::pair<int, int> >* result);
+void tbEm(int i, int j, std::vector<std::pair<int, int> >* result);
+void tbEDm(int i, int j, std::vector<std::pair<int, int> >* result);
 
 
 /* 	
@@ -66,13 +65,12 @@ int main(int argc, char **argv){
 
 void findSecondaryStructure(){
 	std::vector<std::pair<int, int> > result;
-	initializeTables(); // use matrix leeeennnnn TODO
 	computeEm();
 	computeEDm();
 	computeEs();
 	computeEDs();
 	computeED();
-	tbED(n-1);
+	tbED(n-1, &result);
  	printStructure(result);
 }
 
@@ -95,15 +93,14 @@ void computeED(){
 	}
 }
 
-void tbED(int j){
+void tbED(int j, std::vector<std::pair<int, int> >* result){
 	if(tracebackED[j] == -1){
-		tbED(j-1);
+		tbED(j-1, result);
 	}else{
-		// cout << "here" << endl;
 		int i = tracebackED[j];
 		if(i > 1 && i <= j-1){
-			tbED(i-1);
-			tbEDs(i, j);
+			tbED(i-1, result);
+			tbEDs(i, j, result);
 		}
 	}
 }
@@ -148,21 +145,21 @@ float computeEDs(){
 	}
 }
 
-void tbEDs(int i, int j){
+void tbEDs(int i, int j, std::vector<std::pair<int, int> >* result){
 	if(tracebackEDs[i][j] == -1){
 		cout << "Whaat?" << endl;
 	}else if( tracebackEDs[i][j] == -2){
-		result.push_back(std::make_pair(i, j));
+		result->push_back(std::make_pair(i, j));
 	}else if( tracebackEDs[i][j] == -3){
-		result.push_back(std::make_pair(i, j));
-		tbEs(i+1, j-1);
-		tbEDs(i+1, j-1);
+		result->push_back(std::make_pair(i, j));
+		tbEs(i+1, j-1, result);
+		tbEDs(i+1, j-1, result);
 	}else if( tracebackEDs[i][j] == -4){
-		result.push_back(std::make_pair(i, j));
-		tbEs(i+1, j-1);
-		tbEDs(i+1, j-1);
+		result->push_back(std::make_pair(i, j));
+		tbEs(i+1, j-1, result);
+		tbEDs(i+1, j-1, result);
 	}else if( tracebackEDs[i][j] == -5){
-		tbEDm(i, j);
+		tbEDm(i, j, result);
 	}
 }
 
@@ -205,19 +202,19 @@ float computeEs(){
 	}
 }
 
-void tbEs(int i, int j){
+void tbEs(int i, int j, std::vector<std::pair<int, int> >* result){
 	if(tracebackEs[i][j] == -1){
 		cout << "woot" << endl;
 	}else if( tracebackEs[i][j] == -2){
-		result.push_back(std::make_pair(i, j));
+		result->push_back(std::make_pair(i, j));
 	}else if( tracebackEs[i][j] == -3){
-		result.push_back(std::make_pair(i, j));
-		tbEs(i+1, j-1);
+		result->push_back(std::make_pair(i, j));
+		tbEs(i+1, j-1, result);
 	}else if( tracebackEs[i][j] == -4){
-		result.push_back(std::make_pair(i, j));
-		tbEs(i+1, j-1);
+		result->push_back(std::make_pair(i, j));
+		tbEs(i+1, j-1, result);
 	}else if( tracebackEs[i][j] == -5){
-		tbEm(i, j);
+		tbEm(i, j, result);
 	}
 }
 
@@ -237,9 +234,7 @@ float computeEDm(){
 			EDm[i][j] = sigma * a + min;
 		}
 	}
-	// for(int k = 1; k < n; k++){
-	// 	EDm[k][k] = Em[][];
-	// }
+
 	// Implementation 
 	for (int d = 2; d < n; d++){
 		for( int k = 1; k < n-d+1; k++){
@@ -263,7 +258,7 @@ float computeEDm(){
 	}
 }
 
-void tbEm(int i, int j){
+void tbEm(int i, int j, std::vector<std::pair<int, int> >* result){
 
 }
 
@@ -282,9 +277,7 @@ float computeEm(){
 			Em[i][j] = a + min;
 		}
 	}
-	// for(int k = 1; k < n; k++){
-	// 	Em[k][k] = b;
-	// }
+
 	// Implementation 
 	for (int d = 2; d < n; d++){
 		for( int k = 1; k < n-d+1; k++){
@@ -308,46 +301,14 @@ float computeEm(){
 	}
 }
 
-void tbEDm(int i, int j){
+void tbEDm(int i, int j, std::vector<std::pair<int, int> >* result){
 	if(tracebackEDm[i][j] == -1){
-		result.push_back(std::make_pair(i, j));
-		result.push_back(std::make_pair(i, j));
+		result->push_back(std::make_pair(i, j));
+		result->push_back(std::make_pair(i, j));
 		// tbEDs[][] /// ?????
 	}else{
 
 	}
-}
-
-void initializeTables(){
-	// vector< vector<double> > matrix;
-	//now we have an empty 2D-matrix of size (0,0). Resizing it with one single command:
-	// matrix.resize( num_of col , vector<double>( num_of_row , init_value ) );
-
-	// ED.resize(n);
-	// EDs.resize(n);
-	// Es.resize(n);
-	// EDm.resize(n);
-	// Em.resize(n);
-
-	tracebackED.resize(n, 0);
-	// tracebackEDs.resize(n, vector<float>( n, -1) );
-	// tracebackEs.resize(n, vector<float>( n, -1) );
-	// tracebackEDm.resize(n, vector<float>( n, -1) );
-	// tracebackEm.resize(n, vector<float>( n, -1) );
-
-	// for (int i = 0; i < n; i++)
-	// {
-	// 	EDs[i].resize(n);
-	// 	Es[i].resize(n);
-	// 	EDm[i].resize(n);
-	// 	Em[i].resize(n);
-
-	// 	tracebackEDs[i].resize(n, 1.0f);
-	// 	tracebackEs[i].resize(n);
-	// 	tracebackEDm[i].resize(n);
-	// 	tracebackEm[i].resize(n);
-	// }
-	print_matrix(EDs);
 }
 
 void printStructure(const std::vector<std::pair<int, int> >& result){	
