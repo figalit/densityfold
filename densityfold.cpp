@@ -9,18 +9,26 @@ using namespace std;
 #define b -3.0 // unpaired base penalty ??? 
 #define sigma 2 // ???
 
+
+////////////////
+// GLOBALS
+///////////////
+string str = "-AGACGACAAGGUUGAAUCGCACCCACAGUCUAUGAGUCGGUGACAACAUUACGAAAGGCUGUAAAAUCAAUUAUUCACCACAGGGGGCCCCCGUGUCUAG"; 
+int n = str.length();
+std::vector<std::pair<int, int> > result;
 // DP tables to be computed. 
 vector<float> ED;
-vector<vector<float> > EDs;
-vector<vector<float> > Es;
-vector<vector<float> > EDm;
-vector<vector<float> > Em;
+vector<vector<float> > EDs ( n, std::vector<float> ( n, 0 ) );
+vector<vector<float> > Es ( n, std::vector<float> ( n, 0 ) );
+vector<vector<float> > EDm ( n, std::vector<float> ( n, 0 ) );
+vector<vector<float> > Em ( n, std::vector<float> ( n, 0 ) );
+// std::vector< std::vector< float > > item ( 2, std::vector<float> ( 2, 0 ) );
 
 vector<float> tracebackED;
-vector<vector<float> > tracebackEDs;
-vector<vector<float> > tracebackEs;
-vector<vector<float> > tracebackEDm;
-vector<vector<float> > tracebackEm;
+vector<vector<float> > tracebackEDs ( n, std::vector<float> ( n, 0 ) );
+vector<vector<float> > tracebackEs ( n, std::vector<float> ( n, 0 ) );
+vector<vector<float> > tracebackEDm ( n, std::vector<float> ( n, 0 ) );
+vector<vector<float> > tracebackEm ( n, std::vector<float> ( n, 0 ) );
 
 // Method declarations.
 float eS(char x, char y);
@@ -45,12 +53,6 @@ void tbED(int j);
 void tbEm(int i, int j);
 void tbEDm(int i, int j);
 
-////////////////
-// GLOBALS
-///////////////
-string str = "-GCACGACG"; 
-int n = str.length();
-std::vector<std::pair<int, int> > result;
 
 /* 	
 * Initial implementation of density fold 
@@ -317,30 +319,34 @@ void tbEDm(int i, int j){
 }
 
 void initializeTables(){
-	ED.resize(n);
-	EDs.resize(n);
-	Es.resize(n);
-	EDm.resize(n);
-	Em.resize(n);
+	// vector< vector<double> > matrix;
+	//now we have an empty 2D-matrix of size (0,0). Resizing it with one single command:
+	// matrix.resize( num_of col , vector<double>( num_of_row , init_value ) );
 
-	tracebackED.resize(n);
-	tracebackEDs.resize(n);
-	tracebackEs.resize(n);
-	tracebackEDm.resize(n);
-	tracebackEm.resize(n);
+	// ED.resize(n);
+	// EDs.resize(n);
+	// Es.resize(n);
+	// EDm.resize(n);
+	// Em.resize(n);
 
-	for (int i = 0; i < n; i++)
-	{
-		EDs[i].resize(n);
-		Es[i].resize(n);
-		EDm[i].resize(n);
-		Em[i].resize(n);
+	tracebackED.resize(n, 0);
+	// tracebackEDs.resize(n, vector<float>( n, -1) );
+	// tracebackEs.resize(n, vector<float>( n, -1) );
+	// tracebackEDm.resize(n, vector<float>( n, -1) );
+	// tracebackEm.resize(n, vector<float>( n, -1) );
 
-		tracebackEDs[i].resize(n);
-		tracebackEs[i].resize(n);
-		tracebackEDm[i].resize(n);
-		tracebackEm[i].resize(n);
-	}
+	// for (int i = 0; i < n; i++)
+	// {
+	// 	EDs[i].resize(n);
+	// 	Es[i].resize(n);
+	// 	EDm[i].resize(n);
+	// 	Em[i].resize(n);
+
+	// 	tracebackEDs[i].resize(n, 1.0f);
+	// 	tracebackEs[i].resize(n);
+	// 	tracebackEDm[i].resize(n);
+	// 	tracebackEm[i].resize(n);
+	// }
 	print_matrix(EDs);
 }
 
