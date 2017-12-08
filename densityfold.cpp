@@ -5,21 +5,20 @@ using namespace std;
 #define infinity 9999999
 #define INF 100
 #define a -3.0
+#define c -3.0 // contribution for each base pair ??? 
+#define b -3.0 // unpaired base penalty ??? 
+#define sigma 2 // ???
 
 // DP tables to be computed. 
 vector<float> ED;
 vector<vector<float> > EDs;
 vector<vector<float> > Es;
-vector<vector<float> > EDbi;
-vector<vector<float> > Ebi;
 vector<vector<float> > EDm;
 vector<vector<float> > Em;
 
 vector<float> tracebackED;
 vector<vector<float> > tracebackEDs;
 vector<vector<float> > tracebackEs;
-vector<vector<float> > tracebackEDbi;
-vector<vector<float> > tracebackEbi; // no need, only one option for traceback
 vector<vector<float> > tracebackEDm;
 vector<vector<float> > tracebackEm;
 
@@ -28,22 +27,23 @@ float eS(char x, char y);
 float eBI(char i, char j, char x, char y);
 float eH(char x, char y);
 // TODO
-float eM();
-float eDA();
+float eDA(char x, char y);
 
 void findSecondaryStructure();
 void initializeTables();
 void computeED();
 float computeEDs();
-float computeEs(int j);
-float computeEm(int i, int j);
-float computeEDm(int i, int j);
+float computeEs();
+float computeEm();
+float computeEDm(); // ------- This is actually ECM on the paper. 
 void print_matrix(const vector<vector<float> > &A);
 void printStructure(const std::vector<std::pair<int, int> >& result);
 
-void tbEs();
+void tbEs(int i, int j);
 void tbEDs(int i, int j);
 void tbED(int j);
+void tbEm(int i, int j);
+void tbEDm(int i, int j);
 
 ////////////////
 // GLOBALS
@@ -65,12 +65,12 @@ int main(int argc, char **argv){
 void findSecondaryStructure(){
 	std::vector<std::pair<int, int> > result;
 	initializeTables(); // use matrix leeeennnnn TODO
-	computeEs(n);
-	// print_matrix(Es);
+	computeEm();
+	computeEDm();
+	computeEs();
 	computeEDs();
-	print_matrix(EDs);
 	computeED();
-
+	tbED(n-1);
  	printStructure(result);
 }
 
@@ -84,7 +84,7 @@ void computeED(){
 		}
 		// case 2	
 		for( int i = 1; i <= j-1; i++){
-			float case2_min = ED[i-1] + EDs[i][j]; 	//computeEDs(i, j);
+			float case2_min = ED[i-1] + EDs[i][j];
 			if( case2_min < min){
 				tracebackED[j] = i;
 			}
@@ -92,12 +92,14 @@ void computeED(){
 		ED[j] = min;
 	}
 }
+
 void tbED(int j){
 	if(tracebackED[j] == -1){
 		tbED(j-1);
 	}else{
+		// cout << "here" << endl;
 		int i = tracebackED[j];
-		if(k > 1 && k <= j-1){
+		if(i > 1 && i <= j-1){
 			tbED(i-1);
 			tbEDs(i, j);
 		}
@@ -109,7 +111,7 @@ float computeEDs(){
 		for( int i = 1; i < n-l+1; i++){
 			int j = i+l-1;
 			// case 1
-			int min = infinity;
+			float min = infinity;
 			tracebackEDs[i][j] = -1;
 			// case 2
 			if (eH(str[i], str[j]) < min){
@@ -135,9 +137,8 @@ float computeEDs(){
 				}
 			}
 			// case 5
-			float EDm_i_j = computeEDm(i, j);
-			if( EDm_i_j < min){
-				min = EDm_i_j;
+			if( EDm[i][j] < min){
+				min = EDm[i][j];
 				tracebackEDs[i][j] = -5;
 			}
 			EDs[i][j] = min;
@@ -147,22 +148,23 @@ float computeEDs(){
 
 void tbEDs(int i, int j){
 	if(tracebackEDs[i][j] == -1){
-		// ? 
+		cout << "Whaat?" << endl;
 	}else if( tracebackEDs[i][j] == -2){
-		result -> push_back(std::make_pair(i, j));
+		result.push_back(std::make_pair(i, j));
 	}else if( tracebackEDs[i][j] == -3){
-		result -> push_back(std::make_pair(i, j));
+		result.push_back(std::make_pair(i, j));
 		tbEs(i+1, j-1);
 		tbEDs(i+1, j-1);
 	}else if( tracebackEDs[i][j] == -4){
-		// tbEDs(i, j); ???
+		result.push_back(std::make_pair(i, j));
+		tbEs(i+1, j-1);
+		tbEDs(i+1, j-1);
 	}else if( tracebackEDs[i][j] == -5){
-		// TODO
+		tbEDm(i, j);
 	}
 }
 
-float computeEs(int n){
-	cout << "" << n << endl;
+float computeEs(){
 	for (int l = 2; l < n; l++){
 		for( int i = 1; i < n-l+1; i++){
 			int j = i+l-1;
@@ -192,8 +194,8 @@ float computeEs(int n){
 				}
 			}
 			// case 5
-			if( computeEm(i, j) < min){
-				min = computeEm(i, j);
+			if( Em[i][j] < min){
+				min = Em[i][j];
 				tracebackEs[i][j] = -5;
 			}
 			Es[i][j] = min;
@@ -203,52 +205,141 @@ float computeEs(int n){
 
 void tbEs(int i, int j){
 	if(tracebackEs[i][j] == -1){
-		// ? 
+		cout << "woot" << endl;
 	}else if( tracebackEs[i][j] == -2){
-		result -> push_back(std::make_pair(i, j));
+		result.push_back(std::make_pair(i, j));
 	}else if( tracebackEs[i][j] == -3){
-		result -> push_back(std::make_pair(i, j));
+		result.push_back(std::make_pair(i, j));
 		tbEs(i+1, j-1);
 	}else if( tracebackEs[i][j] == -4){
-		// tbEDs(i, j); ???
+		result.push_back(std::make_pair(i, j));
+		tbEs(i+1, j-1);
 	}else if( tracebackEs[i][j] == -5){
-		// TODO
+		tbEm(i, j);
 	}
 }
-// TODO
-float computeEm(int i, int j){
-	return -3.0;
+
+float computeEDm(){
+	// Initialization code
+	for(int i = 1; i < n-2; i++){
+		for( int j = i+2; j < n;j++){
+			float min = infinity;
+			float b_dash = (Em[i][j]) / (j-i+1);
+			for(int k = i+1; k < j; k++){
+				float temp = EDm[i][k] + EDm[k+1][j];
+				if(temp < min){
+					min = temp;
+				}
+				EDm[k][k] = b_dash + sigma * b;
+			}
+			EDm[i][j] = sigma * a + min;
+		}
+	}
+	// for(int k = 1; k < n; k++){
+	// 	EDm[k][k] = Em[][];
+	// }
+	// Implementation 
+	for (int d = 2; d < n; d++){
+		for( int k = 1; k < n-d+1; k++){
+			int l = k+d-1;
+			float min = infinity;
+			// case 1
+			float temp = EDs[k][l] + sigma * (c + eDA(str[k-1], str[k]) + eDA(str[l], str[l+1]) );
+			if(temp < min){
+				min = temp;
+				tracebackEDm[k][l] = -1;
+			}
+			// case 2
+			for( int h = k; h < l; h++){
+				if(Em[k][h] + Em[h+1][l] < min){
+					min = EDm[k][h] + EDm[h+1][l];
+					tracebackEDm[k][l] = k;
+				}
+			}
+			EDm[k][l] = min;
+		}
+	}
 }
 
-// TODO
-float computeEDm(int i, int j){
-	return -3.0;
+void tbEm(int i, int j){
+
+}
+
+float computeEm(){
+	// Initialization code
+	for(int i = 1; i < n-2; i++){
+		for( int j = i+2; j < n;j++){
+			float min = infinity;
+			for(int k = i+1; k < j; k++){
+				float temp = Em[i][k] + Em[k+1][j];
+				if(temp < min){
+					min = temp;
+				}
+				Em[k][k] = b; // ???
+			}
+			Em[i][j] = a + min;
+		}
+	}
+	// for(int k = 1; k < n; k++){
+	// 	Em[k][k] = b;
+	// }
+	// Implementation 
+	for (int d = 2; d < n; d++){
+		for( int k = 1; k < n-d+1; k++){
+			int l = k+d-1;
+			float min = infinity;
+			// case 1
+			float temp = EDs[k][l] + c + eDA(str[k-1], str[k]) + eDA(str[l], str[l+1]);
+			if(temp < min){
+				min = temp;
+				tracebackEm[k][l] = -1;
+			}
+			// case 2
+			for( int h = k; h < l; h++){
+				if(Em[k][h] + Em[h+1][l] < min){
+					min = Em[k][h] + Em[h+1][l];
+					tracebackEm[k][l] = k;
+				}
+			}
+			Em[k][l] = min;
+		}
+	}
+}
+
+void tbEDm(int i, int j){
+	if(tracebackEDm[i][j] == -1){
+		result.push_back(std::make_pair(i, j));
+		result.push_back(std::make_pair(i, j));
+		// tbEDs[][] /// ?????
+	}else{
+
+	}
 }
 
 void initializeTables(){
 	ED.resize(n);
 	EDs.resize(n);
 	Es.resize(n);
-	// EDm.resize(n);
-	// Em.resize(n);
+	EDm.resize(n);
+	Em.resize(n);
 
 	tracebackED.resize(n);
 	tracebackEDs.resize(n);
 	tracebackEs.resize(n);
-	// tracebackEDm.resize(n);
-	// tracebackEm.resize(n);
+	tracebackEDm.resize(n);
+	tracebackEm.resize(n);
 
 	for (int i = 0; i < n; i++)
 	{
 		EDs[i].resize(n);
 		Es[i].resize(n);
-		// EDm[i].resize(n);
-		// Em[i].resize(n);
+		EDm[i].resize(n);
+		Em[i].resize(n);
 
 		tracebackEDs[i].resize(n);
 		tracebackEs[i].resize(n);
-		// tracebackEDm[i].resize(n);
-		// tracebackEm[i].resize(n);
+		tracebackEDm[i].resize(n);
+		tracebackEm[i].resize(n);
 	}
 	print_matrix(EDs);
 }
@@ -259,15 +350,15 @@ void printStructure(const std::vector<std::pair<int, int> >& result){
 		cout << "("<< result[i].first + 1 << ", " << result[i].second + 1 << ") ";
 	}
 	cout << endl;
-	
+
 	char res[n];
 	for( int index = 0; index < n; index++){
 		res[index] = '.';
 	}
 	for(size_t in = 0; in < result.size(); in++){
-		int b = result[in].first;
+		int wee = result[in].first;
 		int s = result[in].second;
-		res[b] = '(';
+		res[wee] = '(';
 		res[s] = ')';
 	}
 	string r = res;
@@ -281,14 +372,19 @@ void print_matrix(const vector<vector<float> > &A){
 				cout << A[i][j] << "\t";    
 			}else{
 				cout << '-' << "\t";
-			}
-			
+			}	
 		}
 		cout << endl;
 	}
 }
 
 // ----------------------------------------------------
+// TODO ???? 
+// Method for calculating the energies of ???.
+float eDA(char x, char y){
+	return - 3.0;
+}
+
 // Method for calculating the energies of Hairpin loop.
 float eH(char x, char y)
 {
