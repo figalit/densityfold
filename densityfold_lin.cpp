@@ -38,11 +38,13 @@ float sigma = 0;
 ///////////////
 //"-GGGGGUAUAGCUCAGGGGUAGAGCAUUUGACUGCAGAUCAAGAGGUCCCUGGUUCAAAUCCAGGUGCCCCCU"; 
 // string str = "GCCGCGACAAGCGGUCCGGGCGCCCUAGGGGCCCGCGACGCCUGCUCGUACCCAUCUUGCUCCUUGGAGGAUUUGGCUAUGAGGA";
-string str = "GGGAACAAAGCUGAAGUACUUACCC";
+// string str = "GGGAACAAAGCUGAAGUACUUACCC";
+string str = "";
+
 int n = str.length() - 1;
 
 int isPairing(char A, char B);
-void print_matrix(const vector<vector<float> > &A);
+void print_matrix(float** A);
 void printStructure(const std::vector<std::pair<int, int> >& result);
 void initializeTables(int length);
 
@@ -1934,6 +1936,19 @@ void updateETables(int i, int j, int hn){
 	}
 }
 
+void print_matrix(float** A){
+	for (int i = 0; i < n+1; i++){
+		for (int j = 0; j < n+1; j++){
+			
+				cout << A[i][j] << "\t";    
+			
+			//	cout << '-' << "\t";
+				
+		}
+		cout << endl;
+	}
+}
+
 /* 	
 * Implementation of density fold 
 * algorithm for RNA structure prediction. 
@@ -1981,6 +1996,7 @@ int main(int argc, char **argv){
 	}
 	tbELC(n, &result, sigma);
 	printStructure(result);
+	print_matrix(ELCm);
 	return 0;
 
 }
