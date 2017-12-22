@@ -1,6 +1,8 @@
 #include <iostream>
+#include <string>
 #include <cstring>
 #include <vector>
+#include <fstream>
 using namespace std;
 #define INF 10000
 
@@ -38,13 +40,12 @@ float sigma = 0;
 ///////////////
 //"-GGGGGUAUAGCUCAGGGGUAGAGCAUUUGACUGCAGAUCAAGAGGUCCCUGGUUCAAAUCCAGGUGCCCCCU"; 
 // string str = "GCCGCGACAAGCGGUCCGGGCGCCCUAGGGGCCCGCGACGCCUGCUCGUACCCAUCUUGCUCCUUGGAGGAUUUGGCUAUGAGGA";
-// string str = "GGGAACAAAGCUGAAGUACUUACCC";
-string str = "";
-
-int n = str.length() - 1;
+//char* str = "-AAAAAAGGGUUUUUU"; // GGGAACAAAGCUGAAGUACUUACCC";
+char* str = "-AAAAAAAAAAAAGGGUUUUUUUUUUUU";
+int n = strlen(str) - 1;
 
 int isPairing(char A, char B);
-void print_matrix(float** A);
+void print_matrix(const vector<vector<float> > &A);
 void printStructure(const std::vector<std::pair<int, int> >& result);
 void initializeTables(int length);
 
@@ -1595,6 +1596,8 @@ float eStack(int i, int j){
 			return -1.40;
 		else if (str[i+1] == 'G' && str[j-1] == 'U')
 			return -0.60;  
+		else 
+			return INF;
 	}
 	else if (str[i] == 'U' && str[j] == 'A'){
 		if (str[i+1] == 'U' && str[j-1] == 'A')
@@ -1609,6 +1612,8 @@ float eStack(int i, int j){
 			return -1.30;
 		else if (str[i+1] == 'G' && str[j-1] == 'U')
 			return -1.00;
+		else
+			return INF;
 	}
 
 	else if (str[i] == 'C' && str[j] == 'G'){
@@ -1624,6 +1629,8 @@ float eStack(int i, int j){
 			return -2.10;
 		else if (str[i+1] == 'G' && str[j-1] == 'U')
 			return -1.40;
+		else 
+			return INF;
 	}
 
 	else if (str[i] == 'G' && str[j] == 'C'){
@@ -1639,6 +1646,8 @@ float eStack(int i, int j){
 			return -2.50;
 		else if (str[i+1] == 'G' && str[j-1] == 'U')
 			return -1.50;
+		else
+			return INF;
 	}  
 
 	else if (str[i] == 'U' && str[j] == 'G'){
@@ -1654,6 +1663,8 @@ float eStack(int i, int j){
 			return -0.50;
 		else if (str[i+1] == 'G' && str[j-1] == 'U')
 			return -0.30;
+		else
+			return INF;
 	}
 
 	else if (str[i] == 'G' && str[j] == 'U'){
@@ -1669,6 +1680,8 @@ float eStack(int i, int j){
 			return -1.30;
 		else if (str[i+1] == 'G' && str[j-1] == 'U')
 			return -0.50;
+		else 
+			return INF;
 	}
 	else
 		return INF;
@@ -1898,10 +1911,12 @@ void updateETables(int i, int j, int hn){
 			min = ELCm[i][j];
 			flag = 4;
 		}
-		ELCs[i][j] = min;
+		
 	}
 
-	if(flag = -1)
+	ELCs[i][j] = min;
+
+	if(flag == -1)
 		Es[i][j] = INF;
 	if(flag == 0){
 		Es[i][j] = INF;
@@ -1936,14 +1951,24 @@ void updateETables(int i, int j, int hn){
 	}
 }
 
+void dumpToFile(float** matrix){
+	ofstream myfile;
+	myfile.open ("energy_file");
+	for( int i = 0; i < n+1; i++){
+		for( int j = 0; j < n+1; j++){
+			myfile << "" << i << " " << j << " " << matrix[i][j] << "\n";
+		}
+	}
+	// myfile << "Writing this to a file.\n";
+	myfile.close();
+}
+
 void print_matrix(float** A){
 	for (int i = 0; i < n+1; i++){
 		for (int j = 0; j < n+1; j++){
-			
-				cout << A[i][j] << "\t";    
-			
-			//	cout << '-' << "\t";
-				
+			// if(i < j)
+				cout << A[i][j] << "\t";
+			// else cout << "-" << "\t"; 
 		}
 		cout << endl;
 	}
@@ -1957,7 +1982,7 @@ int main(int argc, char **argv){
 	sigma = atof(argv[1]);
 	b = atof(argv[2]);
 	cout << "" << sigma << " " << b << endl;
-	
+	// string new_str = "soemthing";
 	initializeTables(n+1);
 
 	int i, j, k;
@@ -1967,8 +1992,9 @@ int main(int argc, char **argv){
 	for(k = 1; k < n; k++){
 		for(i = 1;i <= n-k; i++){
 			j=i+k;
-			cout << "Loop in i j " << i << " " << j << endl;
-			
+			// cout << "Loop in i j " << i << " " << j << endl;
+			if(i==1 && j==15)
+				printf("test\n");
 			// Ebi and ELCbi update
 			updateBIEnergyTables(i, j);
 			// Em and ELCm update
@@ -1978,7 +2004,7 @@ int main(int argc, char **argv){
 		}
 	}
 	float tmp;
-	ELC[0] = 0;
+	ELC[0] = INF;
 	for(j = 1; j <= n; j++){
 		// case 1
 		ELC[j] = ELC[j-1];
@@ -1996,7 +2022,8 @@ int main(int argc, char **argv){
 	}
 	tbELC(n, &result, sigma);
 	printStructure(result);
-	print_matrix(ELCm);
+	print_matrix(ELCs);
+	dumpToFile(ELCs);
 	return 0;
 
 }
