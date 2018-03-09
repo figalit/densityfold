@@ -41,7 +41,9 @@ float sigma = 0;
 //"-GGGGGUAUAGCUCAGGGGUAGAGCAUUUGACUGCAGAUCAAGAGGUCCCUGGUUCAAAUCCAGGUGCCCCCU"; 
 // string str = "GCCGCGACAAGCGGUCCGGGCGCCCUAGGGGCCCGCGACGCCUGCUCGUACCCAUCUUGCUCCUUGGAGGAUUUGGCUAUGAGGA";
 //char* str = "-AAAAAAGGGUUUUUU"; // GGGAACAAAGCUGAAGUACUUACCC";
-char* str = "-AAAAAAAAAAAAGGGUUUUUUUUUUUU";
+// char* str = "-AAAAAAGGGUUUUUU";//"-AAAAAAAAAAAAGGGUUUUUUUUUUUU";
+char* str = "-GCCGCGACAAGCGGUCCGGGCGCCCUAGGGGCCCGGCGGAGACGGGCGCCG"; // GAGGUGUCCGACGCCUGCUCGUACCCAUCUUGCUCCUUGGAGGAUUUGGCUAUGAGGA
+// char* str = "-AAAAAAAAAAAAGGGUUUUUUUUUUUU"; 
 int n = strlen(str) - 1;
 
 int isPairing(char A, char B);
@@ -75,7 +77,6 @@ int** hairpin_number;
 
 
 ////////////////////////////////////////////////////
-
 /*Special cases for internal loop 1x2.
   Y 
   ------------------ 
@@ -832,6 +833,7 @@ float sint2_2[] = {
 	3.60,  3.60,  2.40,  4.30,  3.60,  3.60,  3.60,  3.60,  2.40,  4.50,  3.60,  4.30,  3.80,  3.60,  3.60,  2.60, 
 	1.40,  1.40,  0.20,  2.10,  1.40,  1.40,  1.40,  1.40,  0.20,  2.30,  1.40,  2.10,  1.60,  1.40,  1.40,  0.40 
 };
+////////////////////////////////////////////////////
 
 float calculate_energy(int start,int end);
 float eHairpin_size(int len);
@@ -1773,14 +1775,14 @@ void updateBIEnergyTables(int i, int j){
 		for(int i_prime = i+1; i_prime < j-1; i_prime++){
 			for(int j_prime = i_prime+1; j_prime < j; j_prime++){
 				if(isPairing(str[i_prime], str[j_prime]) < 0) continue;
-				float tmpp = eInternal(i, j, i_prime, j_prime);
+				float eBI_temp = eInternal(i, j, i_prime, j_prime);
 				density = 
-					(( tmpp + Es[i_prime][j_prime])/(j-i+1)) * ((i_prime-i)+(j-j_prime));
-				tmp = density + ELCs[i_prime][j_prime] + sigma*tmpp;
+					(( eBI_temp + Es[i_prime][j_prime])/(j-i+1)) * ((i_prime-i)+(j-j_prime));
+				tmp = density + ELCs[i_prime][j_prime] + sigma*eBI_temp;
 				if(tmp < ELCbi[i][j]){
 					ELCbi[i][j] = tmp;
-					Ebi[i][j] = tmpp + Es[i_prime][j_prime];
-					traceback_bulge[i][j].i = i_prime;
+					Ebi[i][j] = eBI_temp + Es[i_prime][j_prime];
+					traceback_bulge[i][j].i = i_prime; // -------- ~~ traceback_bulge ~~ ---------
 					traceback_bulge[i][j].j = j_prime; 
 				}
 			}
@@ -1792,7 +1794,7 @@ int updateMEnergyTables(int i, int j){
 	ELCm[i][j] = INF;
 	Em[i][j] = INF;
 	int flag = 0;
-	int h, l, keep;
+	int h, l, keep, k;
 	int hairpin_n = -1;
 	float density, energy, b_prime;
 
@@ -1807,12 +1809,12 @@ int updateMEnergyTables(int i, int j){
 			for(int i = 0; i < n+1; i++)
 				solM[i] = new data[n+1];
 
-			energy = calculate_energy(i, j);
+			energy = calculate_energy(i, j); // this is the E-hat
 			b_prime = energy / (j-i+1);
 
 			for(int m = i; m <= j; m++){ 
 				ELCm_dash[m][m]= b_prime + sigma*b;
-				solM[m][m].type = MULTIS;
+				solM[m][m].type = MULTIS; // ~~ traceback solM ~~
 			}
 			// find ELCm min
 			float min1, min2;
@@ -1832,7 +1834,7 @@ int updateMEnergyTables(int i, int j){
 					}
 
 					if(min1 < min2){ 
-						ELCm_dash[h][l] = min1;
+						ELCm_dash[h][l] = min1; // ~~ traceback ELCm-dash ~~
 						solM[h][l].type = MULTI1;
 					}else{
 						ELCm_dash[h][l] = min2;
@@ -1843,11 +1845,11 @@ int updateMEnergyTables(int i, int j){
 			}
 			// update accordingly
 			float min = INF;
-			for( h = i+1; h < j; h++){
-				if(ELCm_dash[i][h] + ELCm_dash[h+1][j] < min){
+			for( k = i+1; k < j; k++){
+				if(ELCm_dash[i][k] + ELCm_dash[k+1][j] < min){
 					flag = 1;
-					min = ELCm_dash[i][h] + ELCm_dash[h+1][j];
-					keep = h;
+					min = ELCm_dash[i][k] + ELCm_dash[k+1][j];
+					keep = k;
 				}
 			}
 
@@ -1868,12 +1870,12 @@ int updateMEnergyTables(int i, int j){
 	// release mem
 	if(flag > 0){
 		for(int i = 0; i < n+1; i++) {
-    		delete [] ELCm_dash[i];
+			delete [] ELCm_dash[i];
 		}
 		delete [] ELCm_dash;
 
 		for(int i = 0; i < n+1; i++) {
-    		delete [] solM[i];
+			delete [] solM[i];
 		}
 		delete [] solM;
 	}
@@ -1918,16 +1920,11 @@ void updateETables(int i, int j, int hn){
 
 	if(flag == -1)
 		Es[i][j] = INF;
-	if(flag == 0){
-		Es[i][j] = INF;
-		traceback_ELCs[i][j].type = MISC;
-		traceback_ELCs[i][j].i = 0;
-	}
 	else if(flag == 1){
 		Es[i][j] = min - 5.7; // taken from densityfold old implementation
-		traceback_ELCs[i][j].type = HAIRPIN;
-		traceback_ELCs[i][j].i=i;
-		traceback_ELCs[i][j].j=j;
+		traceback_ELCs[i][j].type = HAIRPIN; // ~~ traceback ~~
+		traceback_ELCs[i][j].i = i;
+		traceback_ELCs[i][j].j = j;
 		hairpin_number[i][j] = 1;
 	}
 	else if(flag == 2){
@@ -1948,6 +1945,10 @@ void updateETables(int i, int j, int hn){
 		Es[i][j] = Em[i][j];
 		traceback_ELCs[i][j].type = MULTILOOP;
 		hairpin_number[i][j] = hn;
+	}else{ //} if(flag == 0){
+		Es[i][j] = INF;
+		traceback_ELCs[i][j].type = MISC;
+		traceback_ELCs[i][j].i = 0;
 	}
 }
 
@@ -1982,8 +1983,9 @@ int main(int argc, char **argv){
 	sigma = atof(argv[1]);
 	b = atof(argv[2]);
 	cout << "" << sigma << " " << b << endl;
-	// string new_str = "soemthing";
 	initializeTables(n+1);
+
+	clock_t begin = clock();
 
 	int i, j, k;
 	int hn;
@@ -1992,7 +1994,6 @@ int main(int argc, char **argv){
 	for(k = 1; k < n; k++){
 		for(i = 1;i <= n-k; i++){
 			j=i+k;
-			// cout << "Loop in i j " << i << " " << j << endl;
 			if(i==1 && j==15)
 				printf("test\n");
 			// Ebi and ELCbi update
@@ -2003,13 +2004,18 @@ int main(int argc, char **argv){
 			updateETables(i, j, hn);	
 		}
 	}
+
+	clock_t filling_in = clock();
+  	double filling_in_clock = double(filling_in - begin) / CLOCKS_PER_SEC;
+  	cout << "" << filling_in_clock << endl;
 	float tmp;
 	ELC[0] = INF;
 	for(j = 1; j <= n; j++){
 		// case 1
 		ELC[j] = ELC[j-1];
-		traceback_ELC[j].i = j-1;
+		traceback_ELC[j].i = j-1; // ~~ traceback elc ~~
 		traceback_ELC[j].type = 0;
+		
 		// case 2
 		for(i=1; i <= j-1; i++){
 			tmp = ELC[i-1] + ELCs[i][j];
@@ -2020,12 +2026,16 @@ int main(int argc, char **argv){
 			}
 		}
 	}
+
 	tbELC(n, &result, sigma);
 	printStructure(result);
-	print_matrix(ELCs);
+	
+	clock_t end = clock();
+	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	cout << "Overall: " << elapsed_secs << endl;
+	// print_matrix(ELCs);
 	dumpToFile(ELCs);
 	return 0;
-
 }
 
 void tbELC(int j, std::vector<std::pair<int, int> >* result, float sigma){
@@ -2041,7 +2051,6 @@ void tbELC(int j, std::vector<std::pair<int, int> >* result, float sigma){
 }
 
 void tbELCs(int i, int j, std::vector<std::pair<int, int> >* result, float sigma){
-	int control;
 	float density;
 	float tmp;
 	float b_prime;
@@ -2053,18 +2062,18 @@ void tbELCs(int i, int j, std::vector<std::pair<int, int> >* result, float sigma
 	float** ELCml;
 		
 	if(traceback_ELCs[i][j].type == HAIRPIN){
-		result->push_back(std::make_pair(i, j));
+		result->push_back(std::make_pair(traceback_ELCs[i][j].i, traceback_ELCs[i][j].j));
 	}
 	else if(traceback_ELCs[i][j].type == STACK){
-		result->push_back(std::make_pair(i, j));
+		result->push_back(std::make_pair(traceback_ELCs[i][j].i, traceback_ELCs[i][j].j));
 		tbELCs(i+1, j-1, result, sigma);
 	}
 	else if(traceback_ELCs[i][j].type == BULGE){
-		result->push_back(std::make_pair(i, j));
+		result->push_back(std::make_pair(traceback_ELCs[i][j].i, traceback_ELCs[i][j].j));
 		tbELCs((traceback_ELCs)[i][j].i,(traceback_ELCs)[i][j].j,result, sigma);
 	}
 	else if(traceback_ELCs[i][j].type == MULTILOOP){
-		result->push_back(std::make_pair(i, j));
+		// result->push_back(std::make_pair(i, j));
 
 		ELCm_dash = new float*[n+1];
 		for(int i = 0; i < n+1; i++)
@@ -2147,6 +2156,7 @@ void reportloop(int i,int j,int k,int h, struct data ***solM,
 }
 
 void printStructure(const std::vector<std::pair<int, int> >& result){	
+	cout << "Printing structure"<< endl;
 	for (size_t i = 0; i < result.size(); i++){
 		// we actually keep the index values in result. 
 		cout << "("<< result[i].first + 1 << ", " << result[i].second + 1 << ") ";
@@ -2154,14 +2164,16 @@ void printStructure(const std::vector<std::pair<int, int> >& result){
 	cout << endl;
 
 	char res[n];
-	for( int index = 0; index < n; index++){
+	for(int index = 0; index < n; index++){
 		res[index] = '.';
 	}
 	for(size_t in = 0; in < result.size(); in++){
-		int wee = result[in].first;
-		int s = result[in].second;
-		res[wee] = '(';
-		res[s] = ')';
+		// int wee = result[in].first;
+		// int s = result[in].second;
+		// res[wee] = '(';
+		// res[s] = ')';
+		res[result[in].first+1] = '(';
+		res[result[in].second+1] = ')';
 	}
 	string r = res;
 	cout << r.substr(0, n) << endl;
